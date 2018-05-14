@@ -24,23 +24,28 @@ func main() {
 		log.Fatalf("cf auth failed: %s", err.Error())
 	}
 
-	_, err = runCommand("cf", "target", "-o", "test", "-s", "test")
+	_, err = runCommand("cf", "create-org", os.Getenv("CF_ORG"))
 	if err != nil {
-		log.Fatalf("cf target org and space failed: %s", err.Error())
+		log.Fatalf("cf create-org failed: %s", err.Error())
+	}
+
+	_, err = runCommand("cf", "target", "-o", "test")
+	if err != nil {
+		log.Fatalf("cf target org failed: %s", err.Error())
+	}
+
+	_, err = runCommand("cf", "create-space", os.Getenv("CF_SPACE"))
+	if err != nil {
+		log.Fatalf("cf create-space failed: %s", err.Error())
+	}
+
+	_, err = runCommand("cf", "target", "-s", "test")
+	if err != nil {
+		log.Fatalf("cf target space failed: %s", err.Error())
 	}
 
 	for i := 0; ; i++ {
 		fmt.Printf("Push #%d\n", i+1)
-
-		blobstoreSize, err := getBucketSizes(
-			"cairo-droplets",
-			"cairo-buildpacks",
-			"cairo-packages",
-			"cairo-resources",
-		)
-		if err != nil {
-			log.Fatalf("Getting blobstore size failed: %s", err.Error())
-		}
 
 		startTime := time.Now().Unix()
 		_, err = runCommand("cf", "push", "-p", os.Getenv("APP_PATH"), "-b", "staticfile_buildpack", "-m", "64M", fmt.Sprintf("big-app-%d", i%100+1))
@@ -50,14 +55,25 @@ func main() {
 		finishTime := time.Now().Unix()
 		pushDuration := finishTime - startTime
 
+		blobstoreSize, err := getBucketSizes(
+			os.Getenv("DROPLETS_BUCKET"),
+			os.Getenv("BUILDBPACKS_BUCKET"),
+			os.Getenv("PACKAGES_BUCKET"),
+			os.Getenv("RESOURCES_BUCKET"),
+		)
+		if err != nil {
+			log.Fatalf("Getting blobstore size failed: %s", err.Error())
+		}
+
 		fmt.Printf("blobstore size: %dMB\n", blobstoreSize.Megabytes)
 		fmt.Printf("blobstore number of objects: %d\n", blobstoreSize.NumOfFiles)
 		fmt.Printf("cf push duration: %ds\n", pushDuration)
 
-		db, err := sql.Open("mysql", fmt.Sprintf("root:%s@tcp(%s:3306)/s3_benchmarking", os.Getenv("MYSQL_ROOT_PASSWORD"), os.Getenv("MYSQL_HOST")))
+		db, err := sql.Open("mysql", fmt.Sprintf("root:%s@tcp(%s:3306)/%s", os.Getenv("MYSQL_ROOT_PASSWORD"), os.Getenv("MYSQL_HOST"), os.Getenv("MYSQL_DATABASE")))
 		_, err = db.Exec(
 			fmt.Sprintf(
-				"INSERT INTO metrics (blobstore_size, timestamp, cf_push_time, blobstore_num_of_files) VALUES (%d, %d, %d, %d)",
+				"INSERT INTO %s (blobstore_size, timestamp, cf_push_time, blobstore_num_of_files) VALUES (%d, %d, %d, %d)",
+				os.Getenv("MYSQL_DATABASE_TABLE"),
 				blobstoreSize.Megabytes,
 				startTime,
 				pushDuration,

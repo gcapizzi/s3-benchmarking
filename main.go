@@ -11,6 +11,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 )
 
 func main() {
@@ -44,11 +45,16 @@ func main() {
 		log.Fatalf("cf target space failed: %s", err.Error())
 	}
 
+	numberOfApps, err := strconv.Atoi(os.Getenv("NUMBER_OF_APPS"))
+	if err != nil {
+		log.Fatalf("failed to parse NUMBER_OF_APPS: %s", err.Error())
+	}
+
 	for i := 0; ; i++ {
 		fmt.Printf("Push #%d\n", i+1)
 
 		startTime := time.Now().Unix()
-		_, err = runCommand("cf", "push", "-p", os.Getenv("APP_PATH"), "-b", "staticfile_buildpack", "-m", "64M", fmt.Sprintf("big-app-%d", i%100+1))
+		_, err = runCommand("cf", "push", "-p", os.Getenv("APP_PATH"), "-b", "staticfile_buildpack", "-m", "64M", fmt.Sprintf("big-app-%d", i%numberOfApps+1))
 		if err != nil {
 			log.Printf("cf push failed: %s", err.Error())
 		}

@@ -1,24 +1,24 @@
 package main
 
 import (
-	"log"
-	"os"
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"fmt"
-	"gonum.org/v1/plot/plotter"
+	_ "github.com/go-sql-driver/mysql"
 	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
+	"log"
+	"os"
 )
 
 func main() {
 	db, err := sql.Open(
 		"mysql",
 		fmt.Sprintf("root:%s@tcp(%s:3306)/%s",
-		os.Getenv("MYSQL_ROOT_PASSWORD"),
-		os.Getenv("MYSQL_HOST"),
-		os.Getenv("MYSQL_DATABASE")))
+			os.Getenv("MYSQL_ROOT_PASSWORD"),
+			os.Getenv("MYSQL_HOST"),
+			os.Getenv("MYSQL_DATABASE")))
 	if err != nil {
 		log.Fatalf("Failed to connect to db: %s", err.Error())
 	}
@@ -54,24 +54,22 @@ func main() {
 		panic(err)
 	}
 
-	p.Title.Text = "Experiment metrics"
+	p.Title.Text = os.Getenv("EXPERIMENT_TITLE")
 	p.X.Label.Text = "Blobstore size (GB)"
 	p.Y.Label.Text = "CF push time (min)"
 
-	err = plotutil.AddLines(p,
-		"versioned", pts,
-	)
+	err = plotutil.AddLines(p, "", pts)
 	if err != nil {
 		panic(err)
 	}
 
-	err = p.Save(4*vg.Inch, 4*vg.Inch, os.Getenv("METRICS_FILE"))
+	err = p.Save(10*vg.Inch, 5*vg.Inch, os.Getenv("METRICS_FILE"))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func getPoints(Xs, Ys []float64)  plotter.XYs {
+func getPoints(Xs, Ys []float64) plotter.XYs {
 	n := len(Xs)
 	pts := make(plotter.XYs, n)
 	for i := 0; i < n; i++ {
@@ -80,4 +78,3 @@ func getPoints(Xs, Ys []float64)  plotter.XYs {
 	}
 	return pts
 }
-

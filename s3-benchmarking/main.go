@@ -116,9 +116,9 @@ func getBucketSizes(buckets ...string) (BucketSize, error) {
 
 func getBucketSize(bucket string) (BucketSize, error) {
 	var args []string
-	endpoint, found := os.LookupEnv("S3_ENDPOINT")
+	endpoint := os.Getenv("S3_ENDPOINT")
 
-	if found {
+	if endpoint != "" {
 		args = append(args, "--url-endpoint", endpoint)
 	}
 

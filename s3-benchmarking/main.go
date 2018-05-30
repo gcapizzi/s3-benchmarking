@@ -115,13 +115,22 @@ func getBucketSizes(buckets ...string) (BucketSize, error) {
 }
 
 func getBucketSize(bucket string) (BucketSize, error) {
-	outputBuffer, err := runCommand("aws",
+	var args []string
+	endpoint, found := os.LookupEnv("S3_ENDPOINT")
+
+	if found {
+		args = append(args, "--url-endpoint", endpoint)
+	}
+
+	args = append(args,
 		"--region", "eu-west-1",
 		"s3api",
 		"list-object-versions",
 		"--bucket", bucket,
 		"--output", "json",
 		"--query", "[sum(Versions[].Size), length(Versions[])]")
+
+	outputBuffer, err := runCommand("aws", args...)
 	if err != nil {
 		return BucketSize{}, err
 	}

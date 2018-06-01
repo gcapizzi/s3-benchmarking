@@ -10,8 +10,9 @@ import (
 	"os/exec"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
@@ -119,7 +120,7 @@ func getBucketSize(bucket string) (BucketSize, error) {
 	endpoint := os.Getenv("S3_ENDPOINT")
 
 	if endpoint != "" {
-		args = append(args, "--url-endpoint", endpoint)
+		args = append(args, "--endpoint", endpoint)
 	}
 
 	args = append(args,
